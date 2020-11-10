@@ -16,9 +16,16 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.io.*;
+//import java.io.File;
+//import java.io.FileWriter;
 
 public class DockerFactory {
 
@@ -91,16 +98,14 @@ public class DockerFactory {
         // Extract the jinja2 tempate from the resources directory with Resources.toString (see see https://github.com/HubSpot/jinjava)
         //String template = null;
         /******/
-
-
-        //String tempPath = "\\\\wsl$\\Ubuntu-18.04\\home\\prerna\\edna\\controller\\controller\\src\\main\\resources";
-        //tempPath = tempPath.replace("\\", "/");
-        Path resource = context.getParent().resolve("controller").resolve("controller").resolve("src").resolve("main").resolve("resources"); //Paths.get(tempPath);
-
         //Dockerfile.jinja2 is template
         //String template = Resources.toString(Resources.getResource("Dockerfile.jinja2"), Charsets.UTF_8);
 
-        String template = Resources.toString(Resources.getResource(resource.resolve("Dockerfile.jinja2")), Charsets.UTF_8);
+        //Resources.getResource gets the file from the resources folder
+        //returnd the url of the file
+        //URL url = Resources.getResource("foo.txt");
+        //String text = Resources.toString(url, StandardCharsets.UTF_8);
+        String template = Resources.toString(Resources.getResource("Dockerfile.jinja2"), StandardCharsets.UTF_8);
 
         //Use jinja2 to create the Dockerfile; see https://github.com/HubSpot/jinjava.
         Jinjava jinjava = new Jinjava();
@@ -113,21 +118,14 @@ public class DockerFactory {
 
         //Save the renderedDockerfile to context/Dockerfile
         /******/
-        //https://beginnersbook.com/2014/01/how-to-write-to-file-in-java-using-bufferedwriter/
-        File file = new File(context.resolve("Dockerfile"));
-        if (!file.exists()) {
-            file.createNewFile();
-        }
-        FileWriter fw = new FileWriter(file);
-        BufferedWriter writer = new BufferedWriter(fw);
-        //BufferedWriter writer = Files.newBufferedWriter(context, StandardCharsets.UTF_8, StandardOpenOption.CREATE);
-        writer.write(renderedDockerfile);
-        writer.flush();
+        //https://howtodoinjava.com/java11/write-string-to-file/
+        Files.writeString(context.resolve("Dockerfile"), renderedDockerfile, StandardOpenOption.CREATE);
 
         // Generate a dockerignore (i.e. just copy is from the resources folder); NOTE -- do we even need a dockerignore anymore???
 
-        Files.copy(resource.resolve(".dockerignore"), context.resolve(".dockerignore"), REPLACE_EXISTING);
-
+        //URL url = Resources.getResource("foo.txt");
+        //String text = Resources.toString(url, StandardCharsets.UTF_8);
+        Files.copy(Resources.toString(Resources.getResource(".dockerignore"),StandardCharsets.UTF_8 ), context.resolve(".dockerignore"),StandardCopyOption.REPLACE_EXISTING);
         // Copy the edna source files
         //      ednaSource/src --> context/src
         //      ednaSource/setup.cfg --> context/setup.cfg
@@ -136,8 +134,8 @@ public class DockerFactory {
         //Files.copy(getIndividuals.toPath(), des.toPath(), StandardCopyOption.REPLACE_EXISTING);
         /******/
         //https://stackoverflow.com/questions/412380/how-to-combine-paths-in-java
-        Files.copy(ednaSource.resolve("setup.cfg"), context.resolve("setup.cfg"), REPLACE_EXISTING);
-        Files.copy(ednaSource.resolve("setup.cfg"), context.resolve("setup.cfg"), REPLACE_EXISTING);
+        Files.copy(ednaSource.resolve("setup.cfg"), context.resolve("setup.cfg"), StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(ednaSource.resolve("setup.cfg"), context.resolve("setup.cfg"), StandardCopyOption.REPLACE_EXISTING);
         //https://mkyong.com/java/how-to-copy-directory-in-java/
         FileUtils.copyDirectory(new File(ednaSource.resolve("src")), new File(context.resolve("src")));
 
@@ -213,7 +211,7 @@ public class DockerFactory {
         /******/
         FileUtils.deleteDirectory(context.resolve("src"));
         Files.delete(context.resolve("setup.cfg"));
-        Files.delete(context.resolve("setup.py");
+        Files.delete(context.resolve("setup.py"));
         Files.delete(context.resolve("Dockerfile"));
         Files.delete(context.resolve(".dockerignore"));
 
