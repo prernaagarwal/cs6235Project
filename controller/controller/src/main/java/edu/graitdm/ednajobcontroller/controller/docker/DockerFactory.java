@@ -73,32 +73,76 @@ public class DockerFactory {
          */
 
         // Get the docker context (will need to combine a bunch of strings and then convert to path); see above
-        Path context = null;
+        //Path context = null;
+        /******/
+        Path context = Paths.get(configuration.getEdnaAppdir(),ednaJob.getSpec().getApplicationname(),ednaJob.getSpec().getJobname());
 
         // Get the edna source path from the configuration.ednasourcepath...
         Path ednaSource = Paths.get(configuration.getEdnaSourcedir());
 
         // Build the jinja2 context from ednaJob; see https://github.com/HubSpot/jinjava.
         Map<String,String> jinjaContext = new HashMap<String, String>();
+        /******/
+        jinjaContext.put("filename",ednaJob.getSpec().getFilename());
+        jinjaContext.put("jobcontext",ednaJob.getSpec().getJobcontext());
+        jinjaContext.put("jobdependencies",ednaJob.getSpec().getJobdependencies());
+        jinjaContext.put("filedependencies",ednaJob.getSpec().getFiledependencies());
 
         // Extract the jinja2 tempate from the resources directory with Resources.toString (see see https://github.com/HubSpot/jinjava)
-        String template = null;
+        //String template = null;
+        /******/
+
+
+        //String tempPath = "\\\\wsl$\\Ubuntu-18.04\\home\\prerna\\edna\\controller\\controller\\src\\main\\resources";
+        //tempPath = tempPath.replace("\\", "/");
+        Path resource = context.getParent().resolve("controller").resolve("controller").resolve("src").resolve("main").resolve("resources"); //Paths.get(tempPath);
+
+        //Dockerfile.jinja2 is template
+        //String template = Resources.toString(Resources.getResource("Dockerfile.jinja2"), Charsets.UTF_8);
+
+        String template = Resources.toString(Resources.getResource(resource.resolve("Dockerfile.jinja2")), Charsets.UTF_8);
 
         //Use jinja2 to create the Dockerfile; see https://github.com/HubSpot/jinjava.
         Jinjava jinjava = new Jinjava();
-        /* (rendering the dockerfile)
+        /* (rendering the new dockerfile)
         String renderedDockerfile = jinjava.render(template,jinjaContext);
         */
+        /******/
+        String renderedDockerfile = jinjava.render(template,jinjaContext);
+
 
         //Save the renderedDockerfile to context/Dockerfile
+        /******/
+        //https://beginnersbook.com/2014/01/how-to-write-to-file-in-java-using-bufferedwriter/
+        File file = new File(context.resolve("Dockerfile"));
+        if (!file.exists()) {
+            file.createNewFile();
+        }
+        FileWriter fw = new FileWriter(file);
+        BufferedWriter writer = new BufferedWriter(fw);
+        //BufferedWriter writer = Files.newBufferedWriter(context, StandardCharsets.UTF_8, StandardOpenOption.CREATE);
+        writer.write(renderedDockerfile);
+        writer.flush();
+
         // Generate a dockerignore (i.e. just copy is from the resources folder); NOTE -- do we even need a dockerignore anymore???
+
+        Files.copy(resource.resolve(".dockerignore"), context.resolve(".dockerignore"), REPLACE_EXISTING);
+
         // Copy the edna source files
         //      ednaSource/src --> context/src
         //      ednaSource/setup.cfg --> context/setup.cfg
         //      ednaSource/setup.py --> context/setup.py
 
+        //Files.copy(getIndividuals.toPath(), des.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        /******/
+        //https://stackoverflow.com/questions/412380/how-to-combine-paths-in-java
+        Files.copy(ednaSource.resolve("setup.cfg"), context.resolve("setup.cfg"), REPLACE_EXISTING);
+        Files.copy(ednaSource.resolve("setup.cfg"), context.resolve("setup.cfg"), REPLACE_EXISTING);
+        //https://mkyong.com/java/how-to-copy-directory-in-java/
+        FileUtils.copyDirectory(new File(ednaSource.resolve("src")), new File(context.resolve("src")));
+
         /*
-        Files.copy(source, target, Options)  // https://docs.oracle.com/javase/tutorial/essential/io/copy.html
+        Files.copy(source, targe t, Options)  // https://docs.oracle.com/javase/tutorial/essential/io/copy.html
          */
 
         // Get the image details
@@ -121,14 +165,24 @@ public class DockerFactory {
                 .awaitImageId();
         dockerClient.tagImageCmd(imageId, remoteImageRepository, ednaJob.getSpec().getJobimagetag());
          */
+        /******/
+        String imageId = dockerClient.buildImageCmd()
+                .withDockerfilePath(context.resolve("Dockerfile"))  // or use withDockerfile
+                .withPull(true)
+                .withNoCache(true)
+                .withTags(Collections.singleton(localImageName))
+                .exec(new BuildImageResultCallback())
+                .awaitImageId();
+        dockerClient.tagImageCmd(imageId, remoteImageRepository, ednaJob.getSpec().getJobimagetag());
 
+        /***
         try {
             /*
             dockerClient.pushImageCmd(remoteImageRepository)
                         .withTag(ednaJob.getSpec().getJobimagetag())
                         .exec(new PushImageResultCallback())
                         .awaitCompletion();
-             */
+
             // get rid of this, by the way. This is here just so the program compiles, because the above snippet does
             // throw this exception
             throw new InterruptedException();
@@ -138,6 +192,13 @@ public class DockerFactory {
             // TODO handle this somehow? if there is an error, shut down or DO NOT process this...
             //  have to think about this.
         }
+
+        ***/
+
+        dockerClient.pushImageCmd(remoteImageRepository)
+                .withTag(ednaJob.getSpec().getJobimagetag())
+                .exec(new PushImageResultCallback())
+                .awaitCompletion();
 
         // Delete the source files, dockerignore, and Dockerfile
         //https://www.baeldung.com/java-delete-directory
@@ -149,6 +210,12 @@ public class DockerFactory {
         Files.delete(context/Dockerfile);
         Files.delete(context/.dockerignore);
          */
+        /******/
+        FileUtils.deleteDirectory(context.resolve("src"));
+        Files.delete(context.resolve("setup.cfg"));
+        Files.delete(context.resolve("setup.py");
+        Files.delete(context.resolve("Dockerfile"));
+        Files.delete(context.resolve(".dockerignore"));
 
 
 
