@@ -125,7 +125,8 @@ public class DockerFactory {
 
         //URL url = Resources.getResource("foo.txt");
         //String text = Resources.toString(url, StandardCharsets.UTF_8);
-        Files.copy(Resources.toString(Resources.getResource(".dockerignore"),StandardCharsets.UTF_8 ), context.resolve(".dockerignore"),StandardCopyOption.REPLACE_EXISTING);
+        //Files.copy(Resources.toString(Resources.getResource(".dockerignore"),StandardCharsets.UTF_8 ), context.resolve(".dockerignore"),StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(Paths.get(Resources.getResource(".dockerignore").toURI()), context.resolve(".dockerignore"),StandardCopyOption.REPLACE_EXISTING);
         // Copy the edna source files
         //      ednaSource/src --> context/src
         //      ednaSource/setup.cfg --> context/setup.cfg
@@ -137,7 +138,7 @@ public class DockerFactory {
         Files.copy(ednaSource.resolve("setup.cfg"), context.resolve("setup.cfg"), StandardCopyOption.REPLACE_EXISTING);
         Files.copy(ednaSource.resolve("setup.cfg"), context.resolve("setup.cfg"), StandardCopyOption.REPLACE_EXISTING);
         //https://mkyong.com/java/how-to-copy-directory-in-java/
-        FileUtils.copyDirectory(new File(ednaSource.resolve("src")), new File(context.resolve("src")));
+        FileUtils.copyDirectory(ednaSource.resolve("src").toFile(), context.resolve("src").toFile());
 
         /*
         Files.copy(source, targe t, Options)  // https://docs.oracle.com/javase/tutorial/essential/io/copy.html
@@ -165,13 +166,15 @@ public class DockerFactory {
          */
         /******/
         String imageId = dockerClient.buildImageCmd()
-                .withDockerfilePath(context.resolve("Dockerfile"))  // or use withDockerfile
+                .withBaseDirectory(context.resolve("example").toFile())
+                .withDockerfilePath(context.resolve("Dockerfile").toString())  // or use withDockerfile
                 .withPull(true)
                 .withNoCache(true)
                 .withTags(Collections.singleton(localImageName))
                 .exec(new BuildImageResultCallback())
                 .awaitImageId();
-        dockerClient.tagImageCmd(imageId, remoteImageRepository, ednaJob.getSpec().getJobimagetag());
+
+        dockerClient.tagImageCmd(imageId, remoteImageRepository, ednaJob.getSpec().getJobimagetag()).exec();
 
         /***
         try {
@@ -192,7 +195,7 @@ public class DockerFactory {
         }
 
         ***/
-
+        
         dockerClient.pushImageCmd(remoteImageRepository)
                 .withTag(ednaJob.getSpec().getJobimagetag())
                 .exec(new PushImageResultCallback())
@@ -201,15 +204,8 @@ public class DockerFactory {
         // Delete the source files, dockerignore, and Dockerfile
         //https://www.baeldung.com/java-delete-directory
 
-        /*
-        FileUtils.deleteDirectory(context/src);
-        Files.delete(context/setup.cfg);
-        Files.delete(context/setup.py);
-        Files.delete(context/Dockerfile);
-        Files.delete(context/.dockerignore);
-         */
         /******/
-        FileUtils.deleteDirectory(context.resolve("src"));
+        FileUtils.deleteDirectory(context.resolve("src").toFile());
         Files.delete(context.resolve("setup.cfg"));
         Files.delete(context.resolve("setup.py"));
         Files.delete(context.resolve("Dockerfile"));
