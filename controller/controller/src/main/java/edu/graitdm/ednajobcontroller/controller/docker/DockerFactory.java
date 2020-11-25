@@ -105,28 +105,51 @@ public class DockerFactory {
         //returnd the url of the file
         //URL url = Resources.getResource("foo.txt");
         //String text = Resources.toString(url, StandardCharsets.UTF_8);
-        String template = Resources.toString(Resources.getResource("Dockerfile.jinja2"), StandardCharsets.UTF_8);
+        String template = "";
+        try {
+            template = Resources.toString(Resources.getResource("Dockerfile.jinja2"), StandardCharsets.UTF_8);
+        }
+        catch(Exception e)
+        {
 
+        }
         //Use jinja2 to create the Dockerfile; see https://github.com/HubSpot/jinjava.
         Jinjava jinjava = new Jinjava();
         /* (rendering the new dockerfile)
         String renderedDockerfile = jinjava.render(template,jinjaContext);
         */
         /******/
-        String renderedDockerfile = jinjava.render(template,jinjaContext);
+        String renderedDockerfile = "";
+        try {
+            renderedDockerfile = jinjava.render(template, jinjaContext);
+        }
+        catch(Exception e)
+        {
 
+        }
 
         //Save the renderedDockerfile to context/Dockerfile
         /******/
         //https://howtodoinjava.com/java11/write-string-to-file/
-        Files.writeString(context.resolve("Dockerfile"), renderedDockerfile, StandardOpenOption.CREATE);
+        try {
+            Files.writeString(context.resolve("Dockerfile"), renderedDockerfile, StandardOpenOption.CREATE);
+        }
+        catch(Exception e)
+        {
 
+        }
         // Generate a dockerignore (i.e. just copy is from the resources folder); NOTE -- do we even need a dockerignore anymore???
 
         //URL url = Resources.getResource("foo.txt");
         //String text = Resources.toString(url, StandardCharsets.UTF_8);
         //Files.copy(Resources.toString(Resources.getResource(".dockerignore"),StandardCharsets.UTF_8 ), context.resolve(".dockerignore"),StandardCopyOption.REPLACE_EXISTING);
-        Files.copy(Paths.get(Resources.getResource(".dockerignore").toURI()), context.resolve(".dockerignore"),StandardCopyOption.REPLACE_EXISTING);
+        try {
+            Files.copy(Paths.get(Resources.getResource(".dockerignore").toURI()), context.resolve(".dockerignore"), StandardCopyOption.REPLACE_EXISTING);
+        }
+        catch(Exception e)
+        {
+
+        }
         // Copy the edna source files
         //      ednaSource/src --> context/src
         //      ednaSource/setup.cfg --> context/setup.cfg
@@ -135,10 +158,16 @@ public class DockerFactory {
         //Files.copy(getIndividuals.toPath(), des.toPath(), StandardCopyOption.REPLACE_EXISTING);
         /******/
         //https://stackoverflow.com/questions/412380/how-to-combine-paths-in-java
-        Files.copy(ednaSource.resolve("setup.cfg"), context.resolve("setup.cfg"), StandardCopyOption.REPLACE_EXISTING);
-        Files.copy(ednaSource.resolve("setup.cfg"), context.resolve("setup.cfg"), StandardCopyOption.REPLACE_EXISTING);
-        //https://mkyong.com/java/how-to-copy-directory-in-java/
-        FileUtils.copyDirectory(ednaSource.resolve("src").toFile(), context.resolve("src").toFile());
+        try {
+            Files.copy(ednaSource.resolve("setup.cfg"), context.resolve("setup.cfg"), StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(ednaSource.resolve("setup.cfg"), context.resolve("setup.cfg"), StandardCopyOption.REPLACE_EXISTING);
+            //https://mkyong.com/java/how-to-copy-directory-in-java/
+            FileUtils.copyDirectory(ednaSource.resolve("src").toFile(), context.resolve("src").toFile());
+        }
+        catch(Exception e)
+        {
+
+        }
 
         /*
         Files.copy(source, targe t, Options)  // https://docs.oracle.com/javase/tutorial/essential/io/copy.html
@@ -195,22 +224,32 @@ public class DockerFactory {
         }
 
         ***/
-        
-        dockerClient.pushImageCmd(remoteImageRepository)
-                .withTag(ednaJob.getSpec().getJobimagetag())
-                .exec(new PushImageResultCallback())
-                .awaitCompletion();
 
+        try {
+            dockerClient.pushImageCmd(remoteImageRepository)
+                    .withTag(ednaJob.getSpec().getJobimagetag())
+                    .exec(new PushImageResultCallback())
+                    .awaitCompletion();
+        }
+        catch(Exception e)
+        {
+
+        }
         // Delete the source files, dockerignore, and Dockerfile
         //https://www.baeldung.com/java-delete-directory
 
         /******/
-        FileUtils.deleteDirectory(context.resolve("src").toFile());
-        Files.delete(context.resolve("setup.cfg"));
-        Files.delete(context.resolve("setup.py"));
-        Files.delete(context.resolve("Dockerfile"));
-        Files.delete(context.resolve(".dockerignore"));
+        try {
+            FileUtils.deleteDirectory(context.resolve("src").toFile());
+            Files.delete(context.resolve("setup.cfg"));
+            Files.delete(context.resolve("setup.py"));
+            Files.delete(context.resolve("Dockerfile"));
+            Files.delete(context.resolve(".dockerignore"));
+        }
+        catch(Exception e)
+        {
 
+        }
 
 
 
