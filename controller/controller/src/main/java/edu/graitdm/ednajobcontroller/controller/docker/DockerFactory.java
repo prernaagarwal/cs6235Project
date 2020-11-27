@@ -80,8 +80,7 @@ public class DockerFactory {
          */
 
         // Get the docker context (will need to combine a bunch of strings and then convert to path); see above
-        //Path context = null;
-        /******/
+
         Path context = Paths.get(configuration.getEdnaAppdir(),ednaJob.getSpec().getApplicationname(),ednaJob.getSpec().getJobname());
 
         // Get the edna source path from the configuration.ednasourcepath...
@@ -89,7 +88,7 @@ public class DockerFactory {
 
         // Build the jinja2 context from ednaJob; see https://github.com/HubSpot/jinjava.
         Map<String,String> jinjaContext = new HashMap<String, String>();
-        /******/
+
         jinjaContext.put("filename",ednaJob.getSpec().getFilename());
         jinjaContext.put("jobcontext",ednaJob.getSpec().getJobcontext());
         jinjaContext.put("jobdependencies",ednaJob.getSpec().getJobdependencies());
@@ -97,7 +96,7 @@ public class DockerFactory {
 
         // Extract the jinja2 tempate from the resources directory with Resources.toString (see see https://github.com/HubSpot/jinjava)
         //String template = null;
-        /******/
+
         //Dockerfile.jinja2 is template
         //String template = Resources.toString(Resources.getResource("Dockerfile.jinja2"), Charsets.UTF_8);
 
@@ -111,35 +110,34 @@ public class DockerFactory {
         }
         catch(Exception e)
         {
-
+            System.out.println("Unable to get Dockerfile.jinja2");
         }
+        LOGGER.info("Get Jinja template");
         //Use jinja2 to create the Dockerfile; see https://github.com/HubSpot/jinjava.
         Jinjava jinjava = new Jinjava();
         /* (rendering the new dockerfile)
         String renderedDockerfile = jinjava.render(template,jinjaContext);
         */
-        /******/
         String renderedDockerfile = "";
         try {
             renderedDockerfile = jinjava.render(template, jinjaContext);
         }
         catch(Exception e)
         {
-
+            System.out.println("Unable to render dockerfile");
         }
-
+        LOGGER.info("Render Dockerfile");
         //Save the renderedDockerfile to context/Dockerfile
-        /******/
         //https://howtodoinjava.com/java11/write-string-to-file/
         try {
             Files.writeString(context.resolve("Dockerfile"), renderedDockerfile, StandardOpenOption.CREATE);
         }
         catch(Exception e)
         {
-
+            System.out.println("Unable to Write DockerFile");
         }
         // Generate a dockerignore (i.e. just copy is from the resources folder); NOTE -- do we even need a dockerignore anymore???
-
+        LOGGER.info("write to Dockerfile");
         //URL url = Resources.getResource("foo.txt");
         //String text = Resources.toString(url, StandardCharsets.UTF_8);
         //Files.copy(Resources.toString(Resources.getResource(".dockerignore"),StandardCharsets.UTF_8 ), context.resolve(".dockerignore"),StandardCopyOption.REPLACE_EXISTING);
@@ -150,6 +148,7 @@ public class DockerFactory {
         {
 
         }
+        LOGGER.info("Get .dockerignore");
         // Copy the edna source files
         //      ednaSource/src --> context/src
         //      ednaSource/setup.cfg --> context/setup.cfg
@@ -168,7 +167,7 @@ public class DockerFactory {
         {
 
         }
-
+        LOGGER.info("Copy setup.cfg, setup.py and src files");
         /*
         Files.copy(source, targe t, Options)  // https://docs.oracle.com/javase/tutorial/essential/io/copy.html
          */
@@ -181,49 +180,20 @@ public class DockerFactory {
                 ednaJob.getSpec().getRegistryport() + "/" +
                 ednaJob.getSpec().getApplicationname() + "-" +
                 ednaJob.getSpec().getJobname();
-
+        LOGGER.info("Get Image Details");
         // Build the image
-        /*
-        String imageId = dockerClient.buildImageCmd()
-                .withDockerfilePath("/path/to/file")  // or use withDockerfile
-                .withPull(true)
-                .withNoCache(true)
-                .withTags(Collections.singleton(localImageName))
-                .exec(new BuildImageResultCallback())
-                .awaitImageId();
-        dockerClient.tagImageCmd(imageId, remoteImageRepository, ednaJob.getSpec().getJobimagetag());
-         */
         /******/
         String imageId = dockerClient.buildImageCmd()
-                .withBaseDirectory(context.resolve("example").toFile())
+                .withBaseDirectory(context.resolve(ednaJob.getSpec().getJobname()).toFile())
                 .withDockerfilePath(context.resolve("Dockerfile").toString())  // or use withDockerfile
                 .withPull(true)
                 .withNoCache(true)
                 .withTags(Collections.singleton(localImageName))
                 .exec(new BuildImageResultCallback())
                 .awaitImageId();
-
+        LOGGER.info("Build Docker image");
         dockerClient.tagImageCmd(imageId, remoteImageRepository, ednaJob.getSpec().getJobimagetag()).exec();
-
-        /***
-        try {
-            /*
-            dockerClient.pushImageCmd(remoteImageRepository)
-                        .withTag(ednaJob.getSpec().getJobimagetag())
-                        .exec(new PushImageResultCallback())
-                        .awaitCompletion();
-
-            // get rid of this, by the way. This is here just so the program compiles, because the above snippet does
-            // throw this exception
-            throw new InterruptedException();
-
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            // TODO handle this somehow? if there is an error, shut down or DO NOT process this...
-            //  have to think about this.
-        }
-
-        ***/
+        LOGGER.info("Tag Image");
 
         try {
             dockerClient.pushImageCmd(remoteImageRepository)
@@ -235,10 +205,11 @@ public class DockerFactory {
         {
 
         }
+        LOGGER.info("Push Image");
         // Delete the source files, dockerignore, and Dockerfile
         //https://www.baeldung.com/java-delete-directory
 
-        /******/
+
         try {
             FileUtils.deleteDirectory(context.resolve("src").toFile());
             Files.delete(context.resolve("setup.cfg"));
@@ -250,6 +221,7 @@ public class DockerFactory {
         {
 
         }
+        LOGGER.info("Delete extra source files");
 
 
 

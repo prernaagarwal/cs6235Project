@@ -31,7 +31,9 @@ cd ..
 rootpath=$PWD
 cd examples
 
-
+echo $0
+echo $1
+echo $2
 
 # Enter the job directory
 colored_print "Entering working directory $1"
@@ -44,7 +46,8 @@ JOBNAME=$(grep -e jobname config.yaml | awk '{print $2}' | tr -d '\r')
 IMAGENAME="${APPNAME}-${JOBNAME}"
 IMAGETAG=$(grep -e imagetag config.yaml | awk '{print $2}' | tr -d '\r')
 
-
+echo $rootpath
+echo $2
 # Generate the Dockerfile
 colored_print "Generating the Dockerfile from jinja template"
 $rootpath/$2/bin/j2 $rootpath/examples/Dockerfile.jinja2 config.yaml > Dockerfile
@@ -91,5 +94,5 @@ finished_print "\n\nDeployment generated!"
 finished_print "\n\nYou can run this after cd'ing into ${entrydir} with:"
 finished_print "\n\tkubectl apply -f deployment.yaml"
 
-finished_print "\n\nYou can debug with an interactive pod with:"
+finished_print "\n\nYou can debug with an interactive pod with:r
 finished_print "\n\tkubectl run ${JOBNAME}-debug-pod --rm -i --tty --image ${IMAGEADDRESS}/${IMAGENAME}:${IMAGETAG} -- sh"

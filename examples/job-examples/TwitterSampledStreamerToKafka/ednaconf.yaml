@@ -1,6 +1,6 @@
 ---
 variables:
-  bearer_token: BEARER-TOKEN-HERE
+  bearer_token: AAAAAAAAAAAAAAAAAAAAAKLVJAEAAAAA12YN%2BlakBvTS94DoC6YF9WjDDSQ%3DVL5UeT4BDocoPXpPLmZmWyYsHoZKbSGJNuJyzlwvAnaMMZ3CLi
   tweet_fields:
     - author_id
     - conversation_id
